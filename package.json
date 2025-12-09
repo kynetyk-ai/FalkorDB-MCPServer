@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "start:stdio": "node dist/stdio.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
+    "dev:stdio": "ts-node src/stdio.ts",
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "test:coverage": "jest --coverage",

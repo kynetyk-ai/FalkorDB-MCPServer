@@ -28,8 +28,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 
-# Expose the port the app runs on
-EXPOSE 3000
-
-# Run the application
-CMD ["node", "dist/index.js"]
+# Default to stdio mode for MCP compatibility
+# Use: docker run -i falkordb-mcpserver (for stdio/Claude Desktop)
+# Use: docker run -p 3000:3000 falkordb-mcpserver node dist/index.js (for HTTP)
+CMD ["node", "dist/stdio.js"]
