@@ -52,7 +52,11 @@ Configuration is managed through environment variables in the `.env` file:
 Start the development server with hot-reloading:
 
 ```bash
+# HTTP server (REST API)
 npm run dev
+
+# stdio server (for Claude Desktop)
+npm run dev:stdio
 ```
 
 ### Production
@@ -61,8 +65,32 @@ Build and start the server:
 
 ```bash
 npm run build
+
+# HTTP server (REST API on port 3000)
 npm start
+
+# stdio server (for Claude Desktop/MCP clients)
+npm run start:stdio
 ```
+
+## Transport Modes
+
+This server supports two transport modes:
+
+| Mode | Command | Use Case |
+|------|---------|----------|
+| **HTTP** | `npm start` | REST API on port 3000 for programmatic access |
+| **stdio** | `npm run start:stdio` | For Claude Desktop and MCP clients via stdin/stdout |
+
+## Available Tools (stdio mode)
+
+When using stdio mode, the following MCP tools are available:
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `list_graphs` | List all graphs in the database | None |
+| `execute_query` | Execute a Cypher query | `graphName` (required), `query` (required), `params` (optional) |
+| `get_schema` | Get schema info for a graph | `graphName` (required) |
 
 ## API Endpoints
 
@@ -72,9 +100,24 @@ npm start
 * `GET /api/mcp/graphs`: Returns the list of Graphs
 * 
 
-## MCP Configuration
+## Claude Desktop Integration
 
-To use this server with MCP clients, you can add it to your MCP configuration:
+To use this server with Claude Desktop, add the following to your `claude_desktop_config.json`:
+
+**Using Docker (recommended):**
+
+First, ensure your FalkorDB container and this MCP server are on the same Docker network:
+
+```bash
+# Create a network and connect FalkorDB to it
+docker network create falkordb-net
+docker network connect falkordb-net <your-falkordb-container>
+
+# Build the MCP server image
+npm run docker:build
+```
+
+Then add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -82,28 +125,29 @@ To use this server with MCP clients, you can add it to your MCP configuration:
     "falkordb": {
       "command": "docker",
       "args": [
-        "run",
-        "-i",
-        "--rm",
-        "-p", "3000:3000",
-        "--env-file", ".env",
-        "falkordb-mcpserver",
-        "falkordb://host.docker.internal:6379"
+        "run", "-i", "--rm",
+        "--network", "falkordb-net",
+        "-e", "FALKORDB_HOST=<your-falkordb-container>",
+        "-e", "FALKORDB_PORT=6379",
+        "falkordb-mcpserver"
       ]
     }
   }
 }
 ```
 
-For client-side configuration:
+**Using Node.js directly:**
 
 ```json
 {
-  "defaultServer": "falkordb",
-  "servers": {
+  "mcpServers": {
     "falkordb": {
-      "url": "http://localhost:3000/api/mcp",
-      "apiKey": "your_api_key_here"
+      "command": "node",
+      "args": ["/path/to/falkordb-mcpserver/dist/stdio.js"],
+      "env": {
+        "FALKORDB_HOST": "localhost",
+        "FALKORDB_PORT": "6379"
+      }
     }
   }
 }
