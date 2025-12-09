@@ -189,6 +189,21 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('FalkorDB MCP Server running on stdio');
+
+  // Graceful shutdown when stdin closes (client disconnects)
+  process.stdin.on('end', async () => {
+    if (client) {
+      await client.close();
+    }
+    process.exit(0);
+  });
+
+  process.stdin.on('close', async () => {
+    if (client) {
+      await client.close();
+    }
+    process.exit(0);
+  });
 }
 
 main().catch((error) => {
